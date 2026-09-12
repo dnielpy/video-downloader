@@ -1,0 +1,40 @@
+services:
+  aria2:
+    build:
+      context: ./docker/aria2
+    environment:
+      ARIA2_RPC_SECRET: ${ARIA2_RPC_SECRET:?Set ARIA2_RPC_SECRET in .env}
+      DOWNLOAD_DIR: ${DOWNLOAD_DIR:-/downloads}
+    expose:
+      - "6800"
+    volumes:
+      - ${DOWNLOADS_HOST_PATH:?Set DOWNLOADS_HOST_PATH in .env}:${DOWNLOAD_DIR:-/downloads}
+      - aria2-state:/config
+      - download-manager-state:/state
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/aria2-healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+  download-manager:
+    build: .
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      ARIA2_RPC_URL: http://aria2:6800/jsonrpc
+      ARIA2_RPC_SECRET: ${ARIA2_RPC_SECRET:?Set ARIA2_RPC_SECRET in .env}
+      APP_STATE_DIR: /state
+    volumes:
+      - download-manager-state:/state
+    depends_on:
+      aria2:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  aria2-state:
+  download-manager-state:
