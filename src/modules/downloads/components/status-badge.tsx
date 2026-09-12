@@ -12,7 +12,7 @@ const statusStyles: Record<DownloadStatus, string> = {
 
 export function StatusBadge({ status }: { status: DownloadStatus }) {
   return (
-    <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.1em]", statusStyles[status])}>
+    <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.1em]", statusStyles[status])}>
       {status}
     </span>
   );

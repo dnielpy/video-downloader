@@ -27,18 +27,18 @@ export function DownloadCard({ download, pendingAction, onAction }: DownloadCard
     : `${formatBytes(download.completedBytes)} of ${download.totalBytes > 0 ? formatBytes(download.totalBytes) : "unknown"}`;
 
   return (
-    <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-      <div className="flex items-start gap-3.5">
+    <article className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+      <div className="flex min-w-0 items-start gap-3.5">
         <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-secondary text-secondary-foreground">
           <FileDown className="size-[19px]" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <h2 className="truncate text-[15px] font-semibold tracking-[-0.015em]" title={download.fileName}>
+          <div className="flex min-w-0 items-start gap-4">
+            <div className="min-w-0 flex-1">
+              <h2 className="block max-w-full truncate text-[15px] font-semibold tracking-[-0.015em]" title={download.fileName}>
                 {download.fileName}
               </h2>
-              <p className="mt-1 truncate text-xs text-muted-foreground" title={download.url}>{download.url}</p>
+              <p className="mt-1 block max-w-full truncate text-xs text-muted-foreground" title={download.url}>{download.url}</p>
             </div>
             <StatusBadge status={download.status} />
           </div>
