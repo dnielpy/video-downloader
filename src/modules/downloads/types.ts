@@ -21,6 +21,7 @@ export type Download = {
   id: string;
   gid: string;
   url: string;
+  destinationPath?: string | null;
   fileName: string;
   totalBytes: number;
   completedBytes: number;

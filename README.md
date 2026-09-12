@@ -21,6 +21,7 @@ APP_PORT=3000
 ARIA2_RPC_SECRET=replace-with-a-long-random-secret
 DOWNLOADS_HOST_PATH=/srv/download-manager/downloads
 DOWNLOAD_DIR=/downloads
+STREAMLT_API_KEY=replace-with-another-long-random-secret
 ```
 
 Create the host directory and make it writable by the container user:
@@ -79,6 +80,21 @@ The aria2 RPC port is exposed only to the internal Compose network and is protec
 
 The dashboard itself has no authentication. Keep port 3000 private, use a VPN, or place it behind a reverse proxy that provides authentication and TLS before exposing it outside your network.
 
+## Streamlt integration
+
+Download Manager exposes an authenticated bridge at `POST /api/integrations/streamlt/downloads`. It accepts an HTTP or HTTPS `url` and a `destinationPath` relative to `DOWNLOAD_DIR`. Absolute paths, traversal segments, backslashes, and malformed paths are rejected.
+
+Configure the same long secret as `STREAMLT_API_KEY` here and `DOWNLOAD_MANAGER_API_KEY` in Streamlt. Both applications must mount the same host video directory: use Streamlt's `VIDEO_LIBRARY_HOST_PATH` value as this application's `DOWNLOADS_HOST_PATH`. The container paths may differ because Streamlt sends only the profile-relative directory.
+
+Example request:
+
+```bash
+curl -X POST http://download-manager:3000/api/integrations/streamlt/downloads \
+  -H 'Authorization: Bearer YOUR_SHARED_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://example.com/video.mp4","destinationPath":"Family"}'
+```
+
 ## Local development
 
 Run aria2 with the expected RPC configuration, then install and start Next.js:
@@ -88,13 +104,14 @@ pnpm install
 ARIA2_RPC_URL=http://127.0.0.1:6800/jsonrpc \
 ARIA2_RPC_SECRET=your-local-secret \
 APP_STATE_DIR=.download-manager-state \
+DOWNLOAD_DIR=/absolute/path/to/downloads \
+STREAMLT_API_KEY=your-shared-streamlt-secret \
 pnpm dev
 ```
 
 ## Validation
 
 ```bash
-pnpm test
 pnpm lint
 pnpm build
 docker compose config

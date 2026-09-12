@@ -28,6 +28,8 @@ services:
       ARIA2_RPC_URL: http://aria2:6800/jsonrpc
       ARIA2_RPC_SECRET: ${ARIA2_RPC_SECRET:?Set ARIA2_RPC_SECRET in .env}
       APP_STATE_DIR: /state
+      DOWNLOAD_DIR: ${DOWNLOAD_DIR:-/downloads}
+      STREAMLT_API_KEY: ${STREAMLT_API_KEY:?Set STREAMLT_API_KEY in .env}
     volumes:
       - download-manager-state:/state
     depends_on:

@@ -8,7 +8,7 @@ import {
 } from "@/lib/aria2/client";
 import type { Download, DownloadAction, DownloadStatus } from "@/src/modules/downloads/types";
 import { isActionAllowed } from "@/src/modules/downloads/utils/actions";
-import { validateDownloadUrl } from "@/src/modules/downloads/utils/validation";
+import { validateDestinationPath, validateDownloadUrl } from "@/src/modules/downloads/utils/validation";
 import {
   createHistoryRecord,
   getHistoryRecord,
@@ -88,10 +88,11 @@ export async function getDownloadsDashboard() {
   return reconcileHistory(await getAria2Snapshot());
 }
 
-export async function createDownload(urlValue: unknown) {
+export async function createDownload(urlValue: unknown, destinationPathValue?: unknown) {
   const url = validateDownloadUrl(urlValue);
-  const gid = await addAria2Download(url);
-  const record = await saveNewHistoryRecord(createHistoryRecord(gid, url));
+  const destinationPath = validateDestinationPath(destinationPathValue);
+  const gid = await addAria2Download(url, undefined, destinationPath);
+  const record = await saveNewHistoryRecord(createHistoryRecord(gid, url, undefined, destinationPath));
   await persistSessionBestEffort();
   return record;
 }
@@ -122,7 +123,8 @@ export async function cancelDownload(id: string) {
 
 export async function retryDownload(id: string) {
   const record = await requireRecord(id, "retry");
-  const gid = await addAria2Download(record.url, record.fileName);
+  const destinationPath = validateDestinationPath(record.destinationPath);
+  const gid = await addAria2Download(record.url, record.fileName, destinationPath);
   const now = new Date().toISOString();
   const updated = await updateHistoryRecord(id, (current) => ({
     ...current,

@@ -56,6 +56,7 @@ function isDownload(value: unknown): value is Download {
     typeof candidate.id === "string" &&
     typeof candidate.gid === "string" &&
     typeof candidate.url === "string" &&
+    (candidate.destinationPath === undefined || candidate.destinationPath === null || typeof candidate.destinationPath === "string") &&
     typeof candidate.fileName === "string" &&
     isDownloadStatus(candidate.status) &&
     Array.isArray(candidate.attempts)
@@ -227,7 +228,12 @@ async function readTerminalEvents(): Promise<TerminalEvent[]> {
   }
 }
 
-export function createHistoryRecord(gid: string, url: string, now = new Date().toISOString()): Download {
+export function createHistoryRecord(
+  gid: string,
+  url: string,
+  now = new Date().toISOString(),
+  destinationPath = "",
+): Download {
   let fileName = "Untitled download";
 
   try {
@@ -241,6 +247,7 @@ export function createHistoryRecord(gid: string, url: string, now = new Date().t
     id: randomUUID(),
     gid,
     url,
+    destinationPath: destinationPath || null,
     fileName,
     totalBytes: 0,
     completedBytes: 0,
