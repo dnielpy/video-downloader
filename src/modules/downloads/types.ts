@@ -8,6 +8,7 @@ export const DOWNLOAD_STATUSES = [
 ] as const;
 
 export type DownloadStatus = (typeof DOWNLOAD_STATUSES)[number];
+export type DownloadDestination = "streamlt" | "lgallery";
 
 export type DownloadAttempt = {
   gid: string;
@@ -22,6 +23,8 @@ export type Download = {
   gid: string;
   url: string;
   fileName: string;
+  ownerFolder: string;
+  destination: DownloadDestination;
   totalBytes: number;
   completedBytes: number;
   progress: number;

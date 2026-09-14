@@ -1,6 +1,8 @@
 import { Aria2RpcError } from "@/lib/aria2/client";
 import { createDownload, DownloadServiceError, getDownloadsDashboard } from "@/src/modules/downloads/server/download-service";
 import { DownloadValidationError } from "@/src/modules/downloads/utils/validation";
+import { parseHomeServerIdentity } from "@home-server/contracts";
+import { headers } from "next/headers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,7 +28,9 @@ function errorResponse(error: unknown) {
 
 export async function GET() {
   try {
-    return Response.json(await getDownloadsDashboard(), {
+    const identity = parseHomeServerIdentity(await headers());
+    if (!identity) return Response.json({ error: { code: "UNAUTHORIZED", message: "Authentication required." } }, { status: 401 });
+    return Response.json(await getDownloadsDashboard(identity.workspaceFolder), {
       headers: { "cache-control": "no-store" },
     });
   } catch (error) {
@@ -36,8 +40,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as { url?: unknown };
-    return Response.json({ download: await createDownload(body.url) }, { status: 201 });
+    const identity = parseHomeServerIdentity(await headers());
+    if (!identity) return Response.json({ error: { code: "UNAUTHORIZED", message: "Authentication required." } }, { status: 401 });
+    const body = (await request.json()) as { url?: unknown; destination?: unknown };
+    return Response.json({ download: await createDownload(body.url, body.destination, identity.workspaceFolder) }, { status: 201 });
   } catch (error) {
     if (error instanceof SyntaxError) {
       return Response.json({ error: { code: "INVALID_JSON", message: "Request body must be valid JSON." } }, { status: 400 });

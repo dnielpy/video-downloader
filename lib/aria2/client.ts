@@ -103,12 +103,13 @@ async function callRpc<T>(method: string, params: unknown[] = []) {
   }
 }
 
-export async function addDownload(url: string, outputName?: string) {
+export async function addDownload(url: string, outputName?: string, directory?: string) {
   const options: Record<string, string> = { continue: "true" };
 
   if (outputName) {
     options.out = path.basename(outputName);
   }
+  if (directory) options.dir = directory;
 
   return callRpc<string>("aria2.addUri", [[url], options]);
 }

@@ -1,10 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
+import type { HomeServerIdentity } from "@home-server/contracts";
+import { HomeServerShell } from "@home-server/shell";
 import { ThemeProvider } from "next-themes";
-import { AppBar } from "@/src/modules/layout/components/app-bar";
 
-export function AppLayoutView({ children }: { children: ReactNode }) {
+export function AppLayoutView({ children, identity }: { children: ReactNode; identity: HomeServerIdentity | null }) {
   return (
     <ThemeProvider
       attribute="class"
@@ -13,10 +14,9 @@ export function AppLayoutView({ children }: { children: ReactNode }) {
       enableSystem={false}
       storageKey="download-manager-theme"
     >
-      <div className="min-h-screen bg-background">
-        <AppBar />
+      <HomeServerShell currentZone="downloads" identity={identity}>
         <main className="px-4 pb-16 pt-8 sm:px-6 lg:px-8 lg:pt-12">{children}</main>
-      </div>
+      </HomeServerShell>
     </ThemeProvider>
   );
 }

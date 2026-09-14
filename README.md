@@ -1,5 +1,7 @@
 # Download Manager
 
+> This application is supported as a Home Server submodule and expects the central gateway identity and shared workspace packages.
+
 Download Manager is a private, self-hosted dashboard for durable HTTP and HTTPS downloads. Next.js provides the interface and a server-only JSON-RPC bridge; aria2 performs every download and continues running when the browser is closed.
 
 ## Requirements

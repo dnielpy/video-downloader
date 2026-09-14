@@ -39,6 +39,7 @@ export function DownloadCard({ download, pendingAction, onAction }: DownloadCard
                 {download.fileName}
               </h2>
               <p className="mt-1 block max-w-full truncate text-xs text-muted-foreground" title={download.url}>{download.url}</p>
+              <p className="mt-1 text-xs font-semibold text-primary">Saved to {download.destination === "streamlt" ? "Streamlt" : "LGallery"}</p>
             </div>
             <StatusBadge status={download.status} />
           </div>

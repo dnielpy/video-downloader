@@ -6,6 +6,7 @@ import type {
   Download,
   DownloadAction,
   DownloadsResponse,
+  DownloadDestination,
 } from "@/src/modules/downloads/types";
 
 const EMPTY_DASHBOARD: DownloadsResponse = {
@@ -71,7 +72,7 @@ export function useDownloads(initialData: DownloadsResponse | null, initialError
       controllerRef.current = controller;
 
       try {
-        const response = await fetch("/api/downloads", {
+        const response = await fetch("/downloads/api/downloads", {
           cache: "no-store",
           signal: controller.signal,
         });
@@ -132,15 +133,15 @@ export function useDownloads(initialData: DownloadsResponse | null, initialError
     void pollRef.current();
   }, []);
 
-  const add = useCallback(async (url: string) => {
+  const add = useCallback(async (url: string, destination: DownloadDestination) => {
     setIsCreating(true);
     setOperationError(null);
 
     try {
-      const response = await fetch("/api/downloads", {
+      const response = await fetch("/downloads/api/downloads", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, destination }),
       });
 
       if (!response.ok) {
@@ -164,8 +165,8 @@ export function useDownloads(initialData: DownloadsResponse | null, initialError
     setOperationError(null);
 
     const endpoint = action === "cancel"
-      ? `/api/downloads/${download.id}`
-      : `/api/downloads/${download.id}/${action}`;
+      ? `/downloads/api/downloads/${download.id}`
+      : `/downloads/api/downloads/${download.id}/${action}`;
 
     try {
       const response = await fetch(endpoint, { method: action === "cancel" ? "DELETE" : "POST" });

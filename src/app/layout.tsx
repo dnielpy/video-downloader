@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { AppLayoutContainer } from "@/src/modules/layout/containers/app-layout-container";
 import "./globals.css";
+import "@home-server/shell/styles.css";
 
 export const metadata: Metadata = {
   title: "Download Manager",
   description: "A durable personal download manager powered by aria2.",
   icons: {
-    icon: [{ url: "/download-manager-logo.svg", type: "image/svg+xml" }],
+    icon: [{ url: "/downloads/download-manager-logo.svg", type: "image/svg+xml" }],
   },
   other: {
     "darkreader-lock": "true",

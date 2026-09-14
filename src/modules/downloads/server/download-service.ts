@@ -15,7 +15,10 @@ import {
   reconcileHistory,
   saveNewHistoryRecord,
   updateHistoryRecord,
+  removeWorkspaceHistory,
 } from "@/src/modules/downloads/server/history-store";
+import path from "node:path";
+import type { DownloadDestination } from "@/src/modules/downloads/types";
 
 export class DownloadServiceError extends Error {
   readonly code: string;
@@ -52,12 +55,13 @@ function createUpdatedRecord(record: Download, status: DownloadStatus): Download
   };
 }
 
-async function requireRecord(id: string, action: DownloadAction) {
+async function requireRecord(id: string, action: DownloadAction, ownerFolder: string) {
   const record = await getHistoryRecord(id);
 
   if (!record) {
     throw new DownloadServiceError("DOWNLOAD_NOT_FOUND", "Download not found.", 404);
   }
+  if (record.ownerFolder !== ownerFolder) throw new DownloadServiceError("DOWNLOAD_NOT_FOUND", "Download not found.", 404);
 
   if (!isActionAllowed(record.status, action)) {
     const actionLabel: Record<DownloadAction, string> = {
@@ -84,45 +88,52 @@ async function persistSessionBestEffort() {
   }
 }
 
-export async function getDownloadsDashboard() {
-  return reconcileHistory(await getAria2Snapshot());
+export async function getDownloadsDashboard(ownerFolder: string) {
+  return reconcileHistory(await getAria2Snapshot(), ownerFolder);
 }
 
-export async function createDownload(urlValue: unknown) {
+function destinationDirectory(ownerFolder: string, destination: DownloadDestination) {
+  if (!/^[a-z0-9][a-z0-9-]{0,62}$/.test(ownerFolder)) throw new DownloadServiceError("INVALID_WORKSPACE", "Invalid workspace.", 400);
+  return path.join(path.resolve(process.env.HOME_SERVER_DATA_PATH?.trim() || "/data"), ownerFolder, destination);
+}
+
+export async function createDownload(urlValue: unknown, destinationValue: unknown, ownerFolder: string) {
   const url = validateDownloadUrl(urlValue);
-  const gid = await addAria2Download(url);
-  const record = await saveNewHistoryRecord(createHistoryRecord(gid, url));
+  if (destinationValue !== "streamlt" && destinationValue !== "lgallery") throw new DownloadServiceError("INVALID_DESTINATION", "Choose Streamlt or LGallery.", 400);
+  const destination = destinationValue as DownloadDestination;
+  const gid = await addAria2Download(url, undefined, destinationDirectory(ownerFolder, destination));
+  const record = await saveNewHistoryRecord(createHistoryRecord(gid, url, ownerFolder, destination));
   await persistSessionBestEffort();
   return record;
 }
 
-export async function pauseDownload(id: string) {
-  const record = await requireRecord(id, "pause");
+export async function pauseDownload(id: string, ownerFolder: string) {
+  const record = await requireRecord(id, "pause", ownerFolder);
   await pauseAria2Download(record.gid);
   const updated = await updateHistoryRecord(id, (current) => createUpdatedRecord(current, "paused"));
   await persistSessionBestEffort();
   return updated;
 }
 
-export async function resumeDownload(id: string) {
-  const record = await requireRecord(id, "resume");
+export async function resumeDownload(id: string, ownerFolder: string) {
+  const record = await requireRecord(id, "resume", ownerFolder);
   await resumeAria2Download(record.gid);
   const updated = await updateHistoryRecord(id, (current) => createUpdatedRecord(current, "waiting"));
   await persistSessionBestEffort();
   return updated;
 }
 
-export async function cancelDownload(id: string) {
-  const record = await requireRecord(id, "cancel");
+export async function cancelDownload(id: string, ownerFolder: string) {
+  const record = await requireRecord(id, "cancel", ownerFolder);
   await removeAria2Download(record.gid);
   const updated = await updateHistoryRecord(id, (current) => createUpdatedRecord(current, "removed"));
   await persistSessionBestEffort();
   return updated;
 }
 
-export async function retryDownload(id: string) {
-  const record = await requireRecord(id, "retry");
-  const gid = await addAria2Download(record.url, record.fileName);
+export async function retryDownload(id: string, ownerFolder: string) {
+  const record = await requireRecord(id, "retry", ownerFolder);
+  const gid = await addAria2Download(record.url, record.fileName, destinationDirectory(ownerFolder, record.destination));
   const now = new Date().toISOString();
   const updated = await updateHistoryRecord(id, (current) => ({
     ...current,
@@ -148,4 +159,11 @@ export async function retryDownload(id: string) {
   }));
   await persistSessionBestEffort();
   return updated;
+}
+
+export async function cleanupWorkspace(ownerFolder: string) {
+  const records = await removeWorkspaceHistory(ownerFolder);
+  await Promise.all(records.filter((record) => record.status === "active" || record.status === "waiting" || record.status === "paused").map((record) => removeAria2Download(record.gid).catch(() => undefined)));
+  await persistSessionBestEffort();
+  return records.length;
 }

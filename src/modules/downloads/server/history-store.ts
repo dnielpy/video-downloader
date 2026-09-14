@@ -57,6 +57,8 @@ function isDownload(value: unknown): value is Download {
     typeof candidate.gid === "string" &&
     typeof candidate.url === "string" &&
     typeof candidate.fileName === "string" &&
+    typeof candidate.ownerFolder === "string" &&
+    (candidate.destination === "streamlt" || candidate.destination === "lgallery") &&
     isDownloadStatus(candidate.status) &&
     Array.isArray(candidate.attempts)
   );
@@ -176,6 +178,8 @@ function createRecordFromAria2(ariaDownload: Aria2Download, now: string): Downlo
     gid: ariaDownload.gid,
     url,
     fileName: getDownloadFileName(ariaDownload, url),
+    ownerFolder: "unassigned",
+    destination: "lgallery",
     totalBytes: 0,
     completedBytes: 0,
     progress: 0,
@@ -230,6 +234,8 @@ async function readTerminalEvents(): Promise<TerminalEvent[]> {
 export function createHistoryRecord(
   gid: string,
   url: string,
+  ownerFolder: string,
+  destination: Download["destination"],
   now = new Date().toISOString(),
 ): Download {
   let fileName = "Untitled download";
@@ -246,6 +252,8 @@ export function createHistoryRecord(
     gid,
     url,
     fileName,
+    ownerFolder,
+    destination,
     totalBytes: 0,
     completedBytes: 0,
     progress: 0,
@@ -296,7 +304,7 @@ export function updateHistoryRecord(id: string, update: (download: Download) => 
   });
 }
 
-export function reconcileHistory(snapshot: Aria2Snapshot): Promise<DownloadsResponse> {
+export function reconcileHistory(snapshot: Aria2Snapshot, ownerFolder: string): Promise<DownloadsResponse> {
   return withWriteLock(async () => {
     const [manifest, events] = await Promise.all([readManifestUnsafe(), readTerminalEvents()]);
     const now = new Date().toISOString();
@@ -369,14 +377,25 @@ export function reconcileHistory(snapshot: Aria2Snapshot): Promise<DownloadsResp
       lastReconcileStateDirectory = stateDirectory;
     }
 
+    const owned = manifest.downloads.filter((download) => download.ownerFolder === ownerFolder);
     return {
-      downloads: manifest.downloads,
+      downloads: owned,
       stats: {
-        downloadSpeedBytesPerSecond: parseNumber(snapshot.stats.downloadSpeed),
-        active: parseNumber(snapshot.stats.numActive),
-        waiting: parseNumber(snapshot.stats.numWaiting),
-        stopped: manifest.downloads.filter((download) => TERMINAL_STATUSES.has(download.status)).length,
+        downloadSpeedBytesPerSecond: owned.filter((download) => download.status === "active").reduce((total, download) => total + download.speedBytesPerSecond, 0),
+        active: owned.filter((download) => download.status === "active").length,
+        waiting: owned.filter((download) => download.status === "waiting").length,
+        stopped: owned.filter((download) => TERMINAL_STATUSES.has(download.status)).length,
       },
     };
+  });
+}
+
+export function removeWorkspaceHistory(ownerFolder: string) {
+  return withWriteLock(async () => {
+    const manifest = await readManifestUnsafe();
+    const removed = manifest.downloads.filter((download) => download.ownerFolder === ownerFolder);
+    manifest.downloads = manifest.downloads.filter((download) => download.ownerFolder !== ownerFolder);
+    await writeManifestUnsafe(manifest);
+    return removed;
   });
 }

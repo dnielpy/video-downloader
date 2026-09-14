@@ -1,16 +1,20 @@
 import { Aria2RpcError } from "@/lib/aria2/client";
 import type { Download } from "@/src/modules/downloads/types";
 import { DownloadServiceError } from "@/src/modules/downloads/server/download-service";
+import { parseHomeServerIdentity } from "@home-server/contracts";
+import { headers } from "next/headers";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function handleDownloadAction(
   context: RouteContext,
-  action: (id: string) => Promise<Download | null>,
+  action: (id: string, ownerFolder: string) => Promise<Download | null>,
 ) {
   try {
     const { id } = await context.params;
-    const download = await action(id);
+    const identity = parseHomeServerIdentity(await headers());
+    if (!identity) return Response.json({ error: { code: "UNAUTHORIZED", message: "Authentication required." } }, { status: 401 });
+    const download = await action(id, identity.workspaceFolder);
 
     if (!download) {
       return Response.json(
