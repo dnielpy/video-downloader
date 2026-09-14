@@ -103,16 +103,11 @@ async function callRpc<T>(method: string, params: unknown[] = []) {
   }
 }
 
-export async function addDownload(url: string, outputName?: string, destinationPath = "") {
+export async function addDownload(url: string, outputName?: string) {
   const options: Record<string, string> = { continue: "true" };
 
   if (outputName) {
     options.out = path.basename(outputName);
-  }
-
-  if (destinationPath) {
-    const downloadRoot = process.env.DOWNLOAD_DIR?.trim() || "/downloads";
-    options.dir = path.posix.join(downloadRoot, destinationPath);
   }
 
   return callRpc<string>("aria2.addUri", [[url], options]);

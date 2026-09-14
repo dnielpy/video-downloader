@@ -28,34 +28,3 @@ export function validateDownloadUrl(value: unknown) {
 
   return url.toString();
 }
-
-const MAX_DESTINATION_BYTES = 1_024;
-
-export function validateDestinationPath(value: unknown) {
-  if (value === undefined || value === null || value === "") {
-    return "";
-  }
-
-  if (typeof value !== "string") {
-    throw new DownloadValidationError("Destination path must be a string.");
-  }
-
-  if (value.startsWith("/") || value.includes("\\")) {
-    throw new DownloadValidationError("Destination path must be relative to the downloads directory.");
-  }
-
-  if (Buffer.byteLength(value, "utf8") > MAX_DESTINATION_BYTES) {
-    throw new DownloadValidationError("Destination path is too long.");
-  }
-
-  const segments = value.split("/");
-  if (
-    segments.some((segment) =>
-      !segment || segment === "." || segment === ".." || /[\u0000-\u001f\u007f]/.test(segment),
-    )
-  ) {
-    throw new DownloadValidationError("Destination path contains unsupported segments.");
-  }
-
-  return segments.join("/");
-}

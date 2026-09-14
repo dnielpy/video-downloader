@@ -56,7 +56,6 @@ function isDownload(value: unknown): value is Download {
     typeof candidate.id === "string" &&
     typeof candidate.gid === "string" &&
     typeof candidate.url === "string" &&
-    (candidate.destinationPath === undefined || candidate.destinationPath === null || typeof candidate.destinationPath === "string") &&
     typeof candidate.fileName === "string" &&
     isDownloadStatus(candidate.status) &&
     Array.isArray(candidate.attempts)
@@ -232,7 +231,6 @@ export function createHistoryRecord(
   gid: string,
   url: string,
   now = new Date().toISOString(),
-  destinationPath = "",
 ): Download {
   let fileName = "Untitled download";
 
@@ -247,7 +245,6 @@ export function createHistoryRecord(
     id: randomUUID(),
     gid,
     url,
-    destinationPath: destinationPath || null,
     fileName,
     totalBytes: 0,
     completedBytes: 0,
